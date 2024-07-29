@@ -16,7 +16,7 @@ Ansible is an automation configuration management tool. Configuration and automa
 
 The approach I took to integrate all three of these components was to use use Ansible to execute Terraform with the Proxmox provider. Within the Ansible repository, I created a terraform directory and subdirectories for each Terraform project.
 
-#Terraform 
+# Terraform 
 The way you would normally use Terraform is, in a new directory, create a main.tf file which defines blocks of code that define providers, variables, and resources:
 ```yaml
 terraform {
@@ -61,7 +61,7 @@ variable "pve_token_secret" {
   default     = "secret"
 }
 ```
-Copy
+
 Note: In my repository, the variables values are stored in a separate vars.tf file so that they could be encrypted with ansible-vault and only decrypted at runtime. More on that later.
 
 Once the main.tf is created, you would initiate the terraform directory with the command “terraform init”. The init command will download all of the provider plugins and create the state files which allow it to keep track of the status of the resources.
@@ -78,11 +78,11 @@ In order to create the template, first, I needed to install the qemu-guest-agent
 Install libguestfs-tools on Proxmox server:
 
 `apt install libguestfs-tools`
-Copy
+
 Use virt-customize to install qemu-guest-agent directly into the image:
 
-``virt-customize -a debian-10-generic-amd64.qcow2 --install qemu-guest-agent`
-Copy
+`virt-customize -a debian-10-generic-amd64.qcow2 --install qemu-guest-agent`
+
 Create the new VM in proxmox (I use VMIDs of 9000+ for templates)
 
 ```
@@ -376,11 +376,11 @@ output "Master-IPS" {
 output "worker-IPS" {
   value = ["${proxmox_vm_qemu.proxmox_vm_workers.*.default_ipv4_address}"]
 }
-Copy
+```
 Most of this is pretty self-explantory, but the lifecycle section tells Terraform to ignore any changes to network configuration, disk, sshkeys, and the node that the VMs is on. This allows configuration drift in those areas without triggering Terraform to destroy the VM and recreate it with the “correct” configuration.
 
 The last section creates an Ansible inventory file with each of the hosts and their IP addresses. The template, k3s.tpl, is in a templates directory:
-
+```
 [master]
 ${k3s_master_ip}
 
@@ -390,9 +390,10 @@ ${k3s_node_ip}
 [k3s_cluster:children]
 master
 node
-Ansible Playbooks 
+```
+# Ansible Playbooks 
 The playbook k3s-provision.yaml will decrypt the vars.tf file and execute Terraform:
-
+```
 ---
 - hosts: localhost
   name: Create K3S infrastructure
@@ -415,9 +416,9 @@ The playbook k3s-provision.yaml will decrypt the vars.tf file and execute Terraf
     - name: Dump oututs
       ansible.builtin.debug:
         var=outputs                           
-Copy
+```
 The k3s-destroy.yaml playbook will destroy the cluster:
-
+```
 ---
 - hosts: localhost
   name: Remove K3S infrastructure
